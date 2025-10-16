@@ -58,8 +58,9 @@ except Exception as e:
 
 @app.get("/")
 @app.post("/")
+@app.head("/")
 async def root():
-    """Root endpoint - Service info - accepts both GET and POST for MCP client compatibility"""
+    """Root endpoint - Service info - accepts GET, POST, and HEAD for MCP client compatibility"""
     return {
         "service": "Composio Agent Gateway",
         "version": "1.0.0",

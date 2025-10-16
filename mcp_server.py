@@ -20,7 +20,7 @@ mcp_router = APIRouter(prefix="/mcp", tags=["MCP"])
 # Render API configuration
 RENDER_API_KEY = os.getenv("RENDER_API_KEY")
 RENDER_API_BASE = "https://api.render.com/v1"
-RENDER_SERVICE_ID = os.getenv("RENDER_SERVICE_ID", "srv-d3b7ikje5dus73cba2ng")
+RENDER_SERVICE_ID = os.getenv("RENDER_SERVICE_ID", "rnd_GD2dsMkpLsLgpz18ux52aU1I24Yt")
 
 
 class MCPToolRequest(BaseModel):
