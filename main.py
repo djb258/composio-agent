@@ -61,17 +61,20 @@ except Exception as e:
 
 
 @app.get("/")
+@app.post("/")
 async def root():
-    """Root endpoint - Service info"""
+    """Root endpoint - Service info - accepts both GET and POST for MCP client compatibility"""
     return {
         "service": "Composio Agent Gateway",
         "version": "1.0.0",
         "status": "online",
+        "mcp_enabled": True,
         "endpoints": {
             "health": "/health",
             "status": "/status",
             "schema": "/schema",
             "invoke": "/invoke (POST)",
+            "register": "/register (POST)",
             "mcp_tools": "/mcp/tools",
             "mcp_invoke": "/mcp/invoke (POST)",
             "discovery": "/.well-known/ai-plugin.json",
@@ -205,6 +208,49 @@ async def well_known_openapi():
             routes=app.routes
         )
     )
+
+
+@app.post("/register")
+async def mcp_register(request: dict = {}):
+    """MCP client registration endpoint"""
+    import time
+    client_id = request.get("client_id", "unknown") if isinstance(request, dict) else "unknown"
+    logger.info(f"[MCP REGISTER] Client: {client_id}")
+
+    return JSONResponse({
+        "registered": True,
+        "client_id": client_id,
+        "server": "composio-agent",
+        "version": "1.0.0",
+        "capabilities": ["tools", "schema", "invoke"],
+        "timestamp": datetime.utcnow().isoformat()
+    })
+
+
+@app.get("/.well-known/oauth-authorization-server")
+async def oauth_authorization_server():
+    """OAuth discovery endpoint - returns no-auth configuration"""
+    base_url = os.getenv("BASE_URL", "https://composio-imo-creator-url.onrender.com")
+    return JSONResponse({
+        "issuer": base_url,
+        "authorization_endpoint": None,
+        "token_endpoint": None,
+        "grant_types_supported": [],
+        "response_types_supported": [],
+        "service_documentation": f"{base_url}/docs"
+    })
+
+
+@app.get("/.well-known/oauth-protected-resource")
+async def oauth_protected_resource():
+    """OAuth resource discovery - indicates no authentication required"""
+    base_url = os.getenv("BASE_URL", "https://composio-imo-creator-url.onrender.com")
+    return JSONResponse({
+        "resource": base_url,
+        "authorization_servers": [],
+        "bearer_methods_supported": [],
+        "resource_documentation": f"{base_url}/docs"
+    })
 
 
 if __name__ == "__main__":
