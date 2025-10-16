@@ -28,9 +28,17 @@ logger = logging.getLogger(__name__)
 # Initialize FastAPI app
 app = FastAPI(
     title="Composio Agent Gateway",
-    description="Proxy service for Composio API tool invocations",
+    description="Proxy service for Composio API tool invocations with Render MCP integration",
     version="1.0.0"
 )
+
+# Import and include MCP router
+try:
+    from mcp_server import mcp_router
+    app.include_router(mcp_router)
+    logger.info("MCP server endpoints loaded successfully")
+except ImportError as e:
+    logger.warning(f"MCP server not available: {e}")
 
 # Environment variables
 COMPOSIO_API_KEY = os.getenv("COMPOSIO_API_KEY")
