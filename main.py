@@ -69,27 +69,74 @@ async def status():
 
 @app.get("/schema")
 async def get_schema():
-    """Tool schema endpoint"""
-    return {
-        "tools": [
-            "firebase_write",
-            "firebase_read",
-            "render_get_logs",
-            "render_get_service_status",
-            "render_get_latest_deploy",
-            "render_trigger_deploy"
-        ]
-    }
+    """Tool schema endpoint - Returns MCP-compliant tool list"""
+    try:
+        return {
+            "tools": [
+                {
+                    "name": "firebase_write",
+                    "description": "Write data to Firebase",
+                    "parameters": {"type": "object"}
+                },
+                {
+                    "name": "firebase_read",
+                    "description": "Read data from Firebase",
+                    "parameters": {"type": "object"}
+                },
+                {
+                    "name": "render_get_logs",
+                    "description": "Get Render service logs",
+                    "parameters": {"type": "object", "properties": {"limit": {"type": "integer"}}}
+                },
+                {
+                    "name": "render_get_service_status",
+                    "description": "Get Render service status",
+                    "parameters": {"type": "object"}
+                },
+                {
+                    "name": "render_get_latest_deploy",
+                    "description": "Get latest Render deployment",
+                    "parameters": {"type": "object"}
+                },
+                {
+                    "name": "render_trigger_deploy",
+                    "description": "Trigger Render deployment",
+                    "parameters": {"type": "object", "properties": {"clear_cache": {"type": "boolean"}}}
+                }
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Error in /schema: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)}
+        )
 
 
 @app.post("/invoke")
 async def invoke(data: dict):
-    """Tool invocation endpoint"""
-    return {
-        "success": True,
-        "data": data,
-        "timestamp": datetime.utcnow().isoformat()
-    }
+    """Tool invocation endpoint - MCP-compliant with error handling"""
+    try:
+        tool_name = data.get("tool", "unknown")
+        parameters = data.get("parameters", {})
+
+        logger.info(f"Tool invoked: {tool_name}")
+
+        return {
+            "success": True,
+            "tool": tool_name,
+            "result": {
+                "message": "Tool execution simulated",
+                "parameters": parameters
+            },
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error in /invoke: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)}
+        )
 
 
 @app.get("/.well-known/ai-plugin.json")
