@@ -363,10 +363,127 @@ All `/invoke` requests will return:
 2. Check Composio API status
 3. Review proxy logic in `main.py`
 
+## ChatGPT Connector Setup
+
+The Composio Agent Gateway is fully compatible with ChatGPT's MCP (Model Context Protocol) connector in Dev Mode.
+
+### Discovery Endpoint
+
+The service provides a ChatGPT-compatible plugin manifest at:
+```
+https://composio-imo-creator-url.onrender.com/.well-known/ai-plugin.json
+```
+
+### Connecting ChatGPT to the MCP Server
+
+1. **Open ChatGPT Dev Mode**
+   - Navigate to ChatGPT settings
+   - Enable Developer Mode / Plugin Development Mode
+
+2. **Add MCP Server Connection**
+   - **MCP Server URL**: `https://composio-imo-creator-url.onrender.com`
+   - **Authentication**: No Authentication (set `auth.type: none`)
+   - **API Type**: OpenAPI
+   - **OpenAPI Spec URL**: `https://composio-imo-creator-url.onrender.com/openapi.json`
+
+3. **Verify Connection**
+   ```bash
+   # Test the discovery endpoint
+   curl https://composio-imo-creator-url.onrender.com/.well-known/ai-plugin.json
+
+   # Should return plugin manifest with schema_version, name, description, etc.
+   ```
+
+4. **Validate MCP Tools**
+   - Once connected, ChatGPT can discover available tools via `/mcp/tools`
+   - Test tool invocation via `/mcp/invoke`
+
+   Example tools available:
+   - `render_get_service_status` - Get Render service status
+   - `render_get_latest_deploy` - Get latest deployment info
+   - `render_get_logs` - Fetch service logs
+   - `render_trigger_deploy` - Trigger new deployment
+   - `firebase_read` - Read from Firebase
+   - `firebase_write` - Write to Firebase
+   - And more...
+
+5. **Test MCP Integration**
+   ```bash
+   # List available MCP tools
+   curl https://composio-imo-creator-url.onrender.com/mcp/tools
+
+   # Invoke an MCP tool (requires Authorization header for Render tools)
+   curl -X POST https://composio-imo-creator-url.onrender.com/mcp/invoke \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer <RENDER_API_KEY>" \
+     -d '{
+       "tool": "render_get_service_status",
+       "parameters": {}
+     }'
+   ```
+
+### ChatGPT Usage Examples
+
+Once connected, you can interact with the MCP server through ChatGPT:
+
+```
+You: "Check the status of my Render service"
+ChatGPT: [Uses render_get_service_status tool]
+Response: "Your service 'composio-imo-creator-url' is running with status 'not_suspended'..."
+
+You: "Get the latest deployment information"
+ChatGPT: [Uses render_get_latest_deploy tool]
+Response: "The latest deployment (ID: dep-xyz) completed at... with status 'live'..."
+
+You: "Trigger a new deployment"
+ChatGPT: [Uses render_trigger_deploy tool]
+Response: "New deployment initiated with ID: dep-abc..."
+```
+
+### Manifest Details
+
+The `.well-known/ai-plugin.json` manifest includes:
+- **schema_version**: `v1`
+- **name_for_human**: "Composio Agent Gateway"
+- **name_for_model**: "composio_agent"
+- **description_for_human**: Unified MCP server for Composio, Render, and Firebase tools
+- **auth**: No authentication required for discovery (tools may require auth)
+- **api**: OpenAPI specification reference
+
+### Troubleshooting ChatGPT Connection
+
+**Problem**: ChatGPT returns 404 error when connecting
+
+**Solution**:
+1. Verify the discovery endpoint is accessible:
+   ```bash
+   curl https://composio-imo-creator-url.onrender.com/.well-known/ai-plugin.json
+   ```
+2. Ensure service is deployed and running
+3. Check service logs for errors
+
+**Problem**: MCP tools not discoverable
+
+**Solution**:
+1. Verify `/mcp/tools` endpoint:
+   ```bash
+   curl https://composio-imo-creator-url.onrender.com/mcp/tools
+   ```
+2. Check that MCP router is properly imported in `main.py`
+3. Ensure `mcp_server.py` is deployed
+
+**Problem**: Tool invocation fails
+
+**Solution**:
+1. For Render tools, ensure `RENDER_API_KEY` is set in environment variables
+2. For Composio tools, verify `COMPOSIO_API_KEY` is configured
+3. Check tool parameters match expected schema
+
 ## Support & Documentation
 
 - [AGENT_BOOTSTRAP.md](AGENT_BOOTSTRAP.md) - Architecture details
 - [RENDER_COMPOSIO_DEPLOYMENT_GUIDE.md](RENDER_COMPOSIO_DEPLOYMENT_GUIDE.md) - Deployment guide
+- [MCP_SETUP.md](MCP_SETUP.md) - MCP server setup and usage
 - [Composio Documentation](https://docs.composio.dev/)
 - [Render Documentation](https://render.com/docs)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
