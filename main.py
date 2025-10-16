@@ -7,7 +7,7 @@ import os
 import logging
 from datetime import datetime
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
@@ -57,10 +57,9 @@ except Exception as e:
 
 
 @app.get("/")
-@app.post("/")
 @app.head("/")
-async def root():
-    """Root endpoint - Service info - accepts GET, POST, and HEAD for MCP client compatibility"""
+async def root_get():
+    """Root endpoint - Service info - GET and HEAD requests"""
     return {
         "service": "Composio Agent Gateway",
         "version": "1.0.0",
@@ -78,6 +77,40 @@ async def root():
             "docs": "/docs"
         }
     }
+
+
+@app.post("/")
+async def root_post(request: Request):
+    """Root endpoint - JSON-RPC 2.0 handler for MCP protocol"""
+    try:
+        body = await request.json()
+
+        # Check if this is a JSON-RPC request
+        if "jsonrpc" in body and "method" in body:
+            # Handle JSON-RPC / MCP request
+            from mcp_jsonrpc import handle_jsonrpc_request
+            response = await handle_jsonrpc_request(body)
+            return JSONResponse(content=response)
+        else:
+            # Legacy non-JSON-RPC POST
+            return {
+                "service": "Composio Agent Gateway",
+                "version": "1.0.0",
+                "status": "online",
+                "mcp_enabled": True
+            }
+    except Exception as e:
+        logger.error(f"Error handling POST request: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "jsonrpc": "2.0",
+                "error": {
+                    "code": -32700,
+                    "message": "Parse error"
+                }
+            }
+        )
 
 
 @app.get("/health")
