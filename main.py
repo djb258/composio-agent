@@ -6,6 +6,7 @@ Simplified, robust baseline with MCP integration
 import os
 import logging
 from datetime import datetime
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
@@ -16,20 +17,33 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage app lifespan"""
+    logger.info("Starting Composio Agent Gateway...")
+    yield
+    logger.info("Shutting down Composio Agent Gateway...")
+
+
 # Initialize FastAPI app (single instance)
 app = FastAPI(
     title="Composio Agent Gateway",
     description="MCP server for Composio, Render, and Firebase tools",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
-# Import and include MCP router
+# Import and include MCP router (with error handling)
+MCP_AVAILABLE = False
 try:
     from mcp_server import mcp_router
     app.include_router(mcp_router)
+    MCP_AVAILABLE = True
     logger.info("MCP server endpoints loaded successfully")
-except ImportError as e:
+except Exception as e:
     logger.warning(f"MCP server not available: {e}")
+    logger.warning("Service will run without MCP endpoints")
 
 
 @app.get("/health")
