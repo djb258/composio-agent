@@ -46,6 +46,26 @@ except Exception as e:
     logger.warning("Service will run without MCP endpoints")
 
 
+@app.get("/")
+async def root():
+    """Root endpoint - Service info"""
+    return {
+        "service": "Composio Agent Gateway",
+        "version": "1.0.0",
+        "status": "online",
+        "endpoints": {
+            "health": "/health",
+            "status": "/status",
+            "schema": "/schema",
+            "invoke": "/invoke (POST)",
+            "mcp_tools": "/mcp/tools",
+            "mcp_invoke": "/mcp/invoke (POST)",
+            "discovery": "/.well-known/ai-plugin.json",
+            "docs": "/docs"
+        }
+    }
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint"""
