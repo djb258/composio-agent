@@ -185,38 +185,38 @@ async def invoke_mcp_tool(request: MCPToolRequest):
 # Tool implementations
 async def get_service_status() -> Dict:
     """Get current service status"""
-    data = await call_render_api(f"/services/{RENDER_SERVICE_ID}")
-    service = data.get("service", {})
+    # Render API returns service data directly
+    service = await call_render_api(f"/services/{RENDER_SERVICE_ID}")
 
     return {
         "id": service.get("id"),
         "name": service.get("name"),
         "type": service.get("type"),
-        "state": service.get("state"),
+        "state": service.get("suspended"),
         "created_at": service.get("createdAt"),
         "updated_at": service.get("updatedAt"),
         "url": service.get("serviceDetails", {}).get("url"),
-        "branch": service.get("serviceDetails", {}).get("branch"),
-        "auto_deploy": service.get("serviceDetails", {}).get("autoDeploy")
+        "branch": service.get("branch"),
+        "auto_deploy": service.get("autoDeploy")
     }
 
 
 async def get_latest_deploy() -> Dict:
     """Get latest deployment info"""
+    # Render API returns array of [{deploy: {...}}]
     data = await call_render_api(f"/services/{RENDER_SERVICE_ID}/deploys?limit=1")
-    deploys = data.get("deploys", [])
 
-    if not deploys:
+    if not data or not isinstance(data, list) or len(data) == 0:
         return {"message": "No deployments found"}
 
-    deploy = deploys[0]
+    deploy_obj = data[0].get("deploy", {})
     return {
-        "id": deploy.get("id"),
-        "status": deploy.get("status"),
-        "created_at": deploy.get("createdAt"),
-        "finished_at": deploy.get("finishedAt"),
-        "commit_id": deploy.get("commit", {}).get("id"),
-        "commit_message": deploy.get("commit", {}).get("message")
+        "id": deploy_obj.get("id"),
+        "status": deploy_obj.get("status"),
+        "created_at": deploy_obj.get("createdAt"),
+        "finished_at": deploy_obj.get("finishedAt"),
+        "commit_id": deploy_obj.get("commit", {}).get("id"),
+        "commit_message": deploy_obj.get("commit", {}).get("message")
     }
 
 
@@ -240,20 +240,23 @@ async def get_logs(limit: int = 100) -> Dict:
 
 async def list_deploys(limit: int = 10) -> Dict:
     """List recent deployments"""
+    # Render API returns array of [{deploy: {...}}]
     data = await call_render_api(f"/services/{RENDER_SERVICE_ID}/deploys?limit={limit}")
-    deploys = data.get("deploys", [])
+
+    if not data or not isinstance(data, list):
+        return {"count": 0, "deploys": []}
 
     return {
-        "count": len(deploys),
+        "count": len(data),
         "deploys": [
             {
-                "id": deploy.get("id"),
-                "status": deploy.get("status"),
-                "created_at": deploy.get("createdAt"),
-                "finished_at": deploy.get("finishedAt"),
-                "commit_message": deploy.get("commit", {}).get("message")
+                "id": item.get("deploy", {}).get("id"),
+                "status": item.get("deploy", {}).get("status"),
+                "created_at": item.get("deploy", {}).get("createdAt"),
+                "finished_at": item.get("deploy", {}).get("finishedAt"),
+                "commit_message": item.get("deploy", {}).get("commit", {}).get("message")
             }
-            for deploy in deploys
+            for item in data
         ]
     }
 
@@ -281,17 +284,20 @@ async def trigger_deploy(clear_cache: bool = False) -> Dict:
 
 async def get_env_vars() -> Dict:
     """List environment variables"""
+    # Render API returns array of [{envVar: {...}}]
     data = await call_render_api(f"/services/{RENDER_SERVICE_ID}/env-vars")
-    env_vars = data.get("envVars", [])
+
+    if not data or not isinstance(data, list):
+        return {"count": 0, "variables": []}
 
     return {
-        "count": len(env_vars),
+        "count": len(data),
         "variables": [
             {
-                "key": var.get("key"),
-                "value": var.get("value") if not var.get("isSecret") else "***REDACTED***"
+                "key": item.get("envVar", {}).get("key"),
+                "value": item.get("envVar", {}).get("value") if not item.get("envVar", {}).get("isSecret") else "***REDACTED***"
             }
-            for var in env_vars
+            for item in data
         ]
     }
 
