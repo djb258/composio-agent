@@ -8,6 +8,7 @@ import logging
 from datetime import datetime
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 # Configure logging
@@ -32,6 +33,14 @@ app = FastAPI(
     description="MCP server for Composio, Render, and Firebase tools",
     version="1.0.0",
     lifespan=lifespan
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Import and include MCP router (with error handling)
@@ -171,11 +180,12 @@ async def plugin_manifest():
         "auth": {"type": "none"},
         "api": {
             "type": "openapi",
-            "url": "https://composio-imo-creator-url.onrender.com/openapi.json"
+            "url": "https://composio-imo-creator-url.onrender.com/openapi.json",
+            "is_user_authenticated": False
         },
-        "logo_url": "https://composio-imo-creator-url.onrender.com/logo.png",
-        "contact_email": "support@yourdomain.com",
-        "legal_info_url": "https://yourdomain.com/legal"
+        "logo_url": "https://raw.githubusercontent.com/djb258/composio-agent/main/assets/logo.png",
+        "contact_email": "support@composio.dev",
+        "legal_info_url": "https://composio.dev/legal"
     })
 
 
