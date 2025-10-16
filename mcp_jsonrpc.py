@@ -111,107 +111,95 @@ async def handle_initialize(params: Dict[str, Any]) -> Dict[str, Any]:
 async def handle_tools_list(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Handle tools/list request
-    Returns list of available tools with their schemas
+    Returns list of available tools with their schemas from Composio + Render tools
     """
-    return {
-        "tools": [
-            {
-                "name": "render_get_service_status",
-                "description": "Get current status of Render service including deployment state",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {},
-                    "required": []
-                }
-            },
-            {
-                "name": "render_get_latest_deploy",
-                "description": "Get information about the latest deployment",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {},
-                    "required": []
-                }
-            },
-            {
-                "name": "render_get_logs",
-                "description": "Fetch recent logs from the Render service",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "limit": {
-                            "type": "integer",
-                            "description": "Number of log lines to fetch",
-                            "default": 100
-                        }
-                    },
-                    "required": []
-                }
-            },
-            {
-                "name": "render_list_deploys",
-                "description": "List recent deployments",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "limit": {
-                            "type": "integer",
-                            "description": "Number of deployments to list",
-                            "default": 10
-                        }
-                    },
-                    "required": []
-                }
-            },
-            {
-                "name": "render_trigger_deploy",
-                "description": "Trigger a new deployment with optional cache clear",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "clear_cache": {
-                            "type": "boolean",
-                            "description": "Whether to clear build cache",
-                            "default": False
-                        }
-                    },
-                    "required": []
-                }
-            },
-            {
-                "name": "firebase_read",
-                "description": "Read data from Firebase Realtime Database or Firestore",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "path": {
-                            "type": "string",
-                            "description": "Firebase path to read from"
-                        }
-                    },
-                    "required": ["path"]
-                }
-            },
-            {
-                "name": "firebase_write",
-                "description": "Write data to Firebase Realtime Database or Firestore",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "path": {
-                            "type": "string",
-                            "description": "Firebase path to write to"
-                        },
-                        "data": {
-                            "type": "object",
-                            "description": "Data to write"
-                        }
-                    },
-                    "required": ["path", "data"]
-                }
+    tools = []
+
+    # Add Render management tools
+    render_tools = [
+        {
+            "name": "render_get_service_status",
+            "description": "Get current status of Render service including deployment state",
+            "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "required": []
             }
-        ]
-    }
+        },
+        {
+            "name": "render_get_latest_deploy",
+            "description": "Get information about the latest deployment",
+            "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        },
+        {
+            "name": "render_get_logs",
+            "description": "Fetch recent logs from the Render service",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Number of log lines to fetch",
+                        "default": 100
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "render_list_deploys",
+            "description": "List recent deployments",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Number of deployments to list",
+                        "default": 10
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "render_trigger_deploy",
+            "description": "Trigger a new deployment with optional cache clear",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "clear_cache": {
+                        "type": "boolean",
+                        "description": "Whether to clear build cache",
+                        "default": False
+                    }
+                },
+                "required": []
+            }
+        }
+    ]
+    tools.extend(render_tools)
+
+    # Fetch Composio tools dynamically
+    try:
+        from composio_client import composio_client
+
+        composio_tools = await composio_client.list_tools(page=1, page_size=100)
+
+        for tool in composio_tools:
+            mcp_tool = composio_client.convert_to_mcp_schema(tool)
+            tools.append(mcp_tool)
+
+        logger.info(f"[MCP] Loaded {len(render_tools)} Render tools + {len(composio_tools)} Composio tools")
+
+    except Exception as e:
+        logger.error(f"[MCP] Error loading Composio tools: {e}", exc_info=True)
+        logger.info(f"[MCP] Continuing with {len(render_tools)} Render tools only")
+
+    return {"tools": tools}
 
 
 async def handle_tools_call(params: Dict[str, Any]) -> Dict[str, Any]:
@@ -224,59 +212,65 @@ async def handle_tools_call(params: Dict[str, Any]) -> Dict[str, Any]:
 
     logger.info(f"[MCP] Tool call: {tool_name}")
 
-    # Import MCP server functions
     try:
-        from mcp_server import (
-            get_service_status,
-            get_latest_deploy,
-            get_logs,
-            list_deploys,
-            trigger_deploy
-        )
+        # Check if this is a Render tool
+        if tool_name.startswith("render_"):
+            from mcp_server import (
+                get_service_status,
+                get_latest_deploy,
+                get_logs,
+                list_deploys,
+                trigger_deploy
+            )
 
-        # Route to appropriate tool
-        if tool_name == "render_get_service_status":
-            result = await get_service_status()
-        elif tool_name == "render_get_latest_deploy":
-            result = await get_latest_deploy()
-        elif tool_name == "render_get_logs":
-            limit = arguments.get("limit", 100)
-            result = await get_logs(limit)
-        elif tool_name == "render_list_deploys":
-            limit = arguments.get("limit", 10)
-            result = await list_deploys(limit)
-        elif tool_name == "render_trigger_deploy":
-            clear_cache = arguments.get("clear_cache", False)
-            result = await trigger_deploy(clear_cache)
-        elif tool_name == "firebase_read":
-            result = {
-                "message": "Firebase read simulated",
-                "path": arguments.get("path"),
-                "data": {}
-            }
-        elif tool_name == "firebase_write":
-            result = {
-                "message": "Firebase write simulated",
-                "path": arguments.get("path"),
-                "success": True
-            }
+            # Route to appropriate Render tool
+            if tool_name == "render_get_service_status":
+                result = await get_service_status()
+            elif tool_name == "render_get_latest_deploy":
+                result = await get_latest_deploy()
+            elif tool_name == "render_get_logs":
+                limit = arguments.get("limit", 100)
+                result = await get_logs(limit)
+            elif tool_name == "render_list_deploys":
+                limit = arguments.get("limit", 10)
+                result = await list_deploys(limit)
+            elif tool_name == "render_trigger_deploy":
+                clear_cache = arguments.get("clear_cache", False)
+                result = await trigger_deploy(clear_cache)
+            else:
+                result = {"error": f"Unknown Render tool: {tool_name}"}
+
         else:
-            return {
-                "content": [
-                    {
-                        "type": "text",
-                        "text": f"Unknown tool: {tool_name}"
-                    }
-                ],
-                "isError": True
-            }
+            # This is a Composio tool - execute via Composio API
+            from composio_client import composio_client
+
+            logger.info(f"[MCP] Executing Composio tool: {tool_name}")
+
+            exec_result = await composio_client.execute_tool(
+                tool_slug=tool_name,
+                params=arguments
+            )
+
+            if exec_result.get("success"):
+                result = exec_result.get("result", {})
+            else:
+                return {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"Error executing Composio tool: {exec_result.get('error')}"
+                        }
+                    ],
+                    "isError": True
+                }
 
         # Return MCP-compliant response
+        import json
         return {
             "content": [
                 {
                     "type": "text",
-                    "text": str(result)
+                    "text": json.dumps(result, indent=2)
                 }
             ]
         }
