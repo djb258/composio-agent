@@ -45,7 +45,9 @@ class ComposioClient:
             url = f"{self.base_url}/tools"
             params = {
                 "page": page,
-                "pageSize": page_size
+                "pageSize": page_size,
+                "showAll": "true",
+                "includeLocal": "true"
             }
 
             async with httpx.AsyncClient(timeout=30.0) as client:
