@@ -28,7 +28,7 @@ class ComposioClient:
             return {}
 
         return {
-            "X-API-Key": self.api_key,
+            "x-api-key": self.api_key,
             "Content-Type": "application/json"
         }
 
