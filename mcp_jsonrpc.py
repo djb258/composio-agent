@@ -191,22 +191,8 @@ async def handle_tools_list(params: Dict[str, Any]) -> Dict[str, Any]:
 
         logger.info(f"[MCP] Composio API key configured: {bool(composio_client.api_key)}")
 
-        # Fetch multiple pages of Composio tools
-        all_composio_tools = []
-        page = 1
-        page_size = 100
-
-        while len(all_composio_tools) < 500:  # Max 500 tools
-            page_tools = await composio_client.list_tools(page=page, page_size=page_size)
-            if not page_tools:
-                break
-            all_composio_tools.extend(page_tools)
-            logger.info(f"[MCP] Fetched page {page}: {len(page_tools)} tools (total so far: {len(all_composio_tools)})")
-            if len(page_tools) < page_size:
-                break  # Last page
-            page += 1
-
-        composio_tools = all_composio_tools
+        # Fetch ALL Composio tools (now handles pagination internally)
+        composio_tools = await composio_client.list_tools()
 
         logger.info(f"[MCP] Received {len(composio_tools)} tools from Composio API")
 

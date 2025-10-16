@@ -34,43 +34,60 @@ class ComposioClient:
 
     async def list_tools(self, page: int = 1, page_size: int = 50) -> List[Dict[str, Any]]:
         """
-        Fetch list of available Composio tools
+        Fetch ALL available Composio tools using cursor-based pagination
         Returns: List of tool definitions with schemas
         """
         if not self.api_key:
             logger.warning("[Composio] Cannot list tools - API key not configured")
             return []
 
+        all_tools = []
+        cursor = None
+        page_num = 1
+
         try:
-            url = f"{self.base_url}/tools"
-            params = {
-                "page": page,
-                "pageSize": page_size,
-                "showAll": "true",
-                "includeLocal": "true"
-            }
-
             async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(
-                    url,
-                    headers=self._get_headers(),
-                    params=params
-                )
-                response.raise_for_status()
-                data = response.json()
+                while True:
+                    url = f"{self.base_url}/tools"
+                    params = {
+                        "pageSize": 100,  # Max page size
+                        "showAll": "true",
+                        "includeLocal": "true"
+                    }
 
-                logger.info(f"[Composio] Raw API response keys: {list(data.keys())}")
-                logger.info(f"[Composio] Response sample: {str(data)[:500]}")
+                    if cursor:
+                        params["cursor"] = cursor
 
-                tools = data.get("data", [])
-                if not tools and "items" in data:
+                    response = await client.get(
+                        url,
+                        headers=self._get_headers(),
+                        params=params
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+
+                    # Extract tools from response
                     tools = data.get("items", [])
-                if not tools and isinstance(data, list):
-                    tools = data
+                    all_tools.extend(tools)
 
-                logger.info(f"[Composio] Fetched {len(tools)} tools")
+                    logger.info(f"[Composio] Page {page_num}: fetched {len(tools)} tools (total: {len(all_tools)})")
 
-                return tools
+                    # Check for next page
+                    cursor = data.get("next_cursor")
+                    total_items = data.get("total_items", 0)
+
+                    if not cursor or len(all_tools) >= total_items:
+                        break
+
+                    page_num += 1
+
+                    # Safety limit
+                    if page_num > 20:
+                        logger.warning(f"[Composio] Reached pagination limit at {len(all_tools)} tools")
+                        break
+
+                logger.info(f"[Composio] ✅ Fetched {len(all_tools)} total tools across {page_num} pages")
+                return all_tools
 
         except httpx.HTTPStatusError as e:
             logger.error(f"[Composio] HTTP error fetching tools: {e.response.status_code} - {e.response.text}")
