@@ -9,7 +9,6 @@ from datetime import datetime
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
 
@@ -37,10 +36,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add HTTPS redirect middleware
-app.add_middleware(HTTPSRedirectMiddleware)
-
-# Add CORS middleware
+# Add CORS middleware (Render handles HTTPS automatically)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -176,9 +172,26 @@ async def invoke(data: dict):
         )
 
 
+@app.get("/legal")
+async def legal_info():
+    """Legal information endpoint"""
+    base_url = os.getenv("BASE_URL", "https://composio-imo-creator-url.onrender.com")
+    return {
+        "service": "Composio Agent Gateway",
+        "version": "1.0.0",
+        "terms_of_service": f"{base_url}/terms",
+        "privacy_policy": f"{base_url}/privacy",
+        "license": "MIT",
+        "disclaimer": "This is an MCP gateway service for Composio, Render, and Firebase tools. Use at your own risk.",
+        "repository": "https://github.com/djb258/composio-agent",
+        "contact": "support@composio.dev"
+    }
+
+
 @app.get("/.well-known/ai-plugin.json")
 async def plugin_manifest():
     """ChatGPT MCP discovery endpoint"""
+    base_url = os.getenv("BASE_URL", "https://composio-imo-creator-url.onrender.com")
     return JSONResponse({
         "schema_version": "v1",
         "name_for_human": "Composio Agent Gateway",
@@ -188,12 +201,12 @@ async def plugin_manifest():
         "auth": {"type": "none"},
         "api": {
             "type": "openapi",
-            "url": "https://composio-imo-creator-url.onrender.com/openapi.json",
+            "url": f"{base_url}/openapi.json",
             "is_user_authenticated": False
         },
         "logo_url": "https://raw.githubusercontent.com/djb258/composio-agent/main/assets/logo.png",
         "contact_email": "support@composio.dev",
-        "legal_info_url": "https://composio.dev/legal"
+        "legal_info_url": f"{base_url}/legal"
     })
 
 
