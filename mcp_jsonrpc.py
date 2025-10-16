@@ -113,6 +113,7 @@ async def handle_tools_list(params: Dict[str, Any]) -> Dict[str, Any]:
     Handle tools/list request
     Returns list of available tools with their schemas from Composio + Render tools
     """
+    logger.info("[MCP] tools/list called - fetching tools")
     tools = []
 
     # Add Render management tools
@@ -184,21 +185,27 @@ async def handle_tools_list(params: Dict[str, Any]) -> Dict[str, Any]:
     tools.extend(render_tools)
 
     # Fetch Composio tools dynamically
+    logger.info("[MCP] Starting Composio tool fetch...")
     try:
         from composio_client import composio_client
 
+        logger.info(f"[MCP] Composio API key configured: {bool(composio_client.api_key)}")
+
         composio_tools = await composio_client.list_tools(page=1, page_size=100)
+
+        logger.info(f"[MCP] Received {len(composio_tools)} tools from Composio API")
 
         for tool in composio_tools:
             mcp_tool = composio_client.convert_to_mcp_schema(tool)
             tools.append(mcp_tool)
 
-        logger.info(f"[MCP] Loaded {len(render_tools)} Render tools + {len(composio_tools)} Composio tools")
+        logger.info(f"[MCP] ✅ Successfully loaded {len(render_tools)} Render tools + {len(composio_tools)} Composio tools")
 
     except Exception as e:
-        logger.error(f"[MCP] Error loading Composio tools: {e}", exc_info=True)
+        logger.error(f"[MCP] ❌ Error loading Composio tools: {e}", exc_info=True)
         logger.info(f"[MCP] Continuing with {len(render_tools)} Render tools only")
 
+    logger.info(f"[MCP] Returning total of {len(tools)} tools to client")
     return {"tools": tools}
 
 
