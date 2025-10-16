@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: composio-agent
+    runtime: python
+    plan: free
+    branch: main
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: COMPOSIO_API_KEY
+        sync: false
+      - key: COMPOSIO_API_URL
+        value: https://api.composio.dev/api/v1
+      - key: SERVICE_NAME
+        value: composio-agent
+      - key: KILL_SWITCH
+        value: false
+      - key: LOG_LEVEL
+        value: INFO
+      - key: PYTHONUNBUFFERED
+        value: 1
+    healthCheckPath: /health
+    autoDeploy: true

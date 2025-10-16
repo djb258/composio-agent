@@ -1,0 +1,212 @@
+{
+  "tools": [
+    {
+      "name": "firebase_read",
+      "description": "Read data from Firebase Realtime Database or Firestore",
+      "endpoint": "/actions/firebase_read/execute",
+      "method": "POST",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "description": "Unique identifier for the agent"
+          },
+          "process_id": {
+            "type": "string",
+            "description": "Process identifier"
+          },
+          "blueprint_id": {
+            "type": "string",
+            "description": "Blueprint/template identifier"
+          },
+          "timestamp_last_touched": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last modification timestamp"
+          },
+          "path": {
+            "type": "string",
+            "description": "Firebase path to read from"
+          },
+          "database": {
+            "type": "string",
+            "description": "Database type (realtime or firestore)",
+            "enum": ["realtime", "firestore"]
+          }
+        },
+        "required": ["agent_id", "process_id", "blueprint_id", "timestamp_last_touched", "path"]
+      }
+    },
+    {
+      "name": "firebase_write",
+      "description": "Write data to Firebase Realtime Database or Firestore",
+      "endpoint": "/actions/firebase_write/execute",
+      "method": "POST",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "description": "Unique identifier for the agent"
+          },
+          "process_id": {
+            "type": "string",
+            "description": "Process identifier"
+          },
+          "blueprint_id": {
+            "type": "string",
+            "description": "Blueprint/template identifier"
+          },
+          "timestamp_last_touched": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last modification timestamp"
+          },
+          "path": {
+            "type": "string",
+            "description": "Firebase path to write to"
+          },
+          "data": {
+            "type": "object",
+            "description": "Data to write"
+          },
+          "database": {
+            "type": "string",
+            "description": "Database type (realtime or firestore)",
+            "enum": ["realtime", "firestore"]
+          }
+        },
+        "required": ["agent_id", "process_id", "blueprint_id", "timestamp_last_touched", "path", "data"]
+      }
+    },
+    {
+      "name": "send_email",
+      "description": "Send email via configured email service",
+      "endpoint": "/actions/send_email/execute",
+      "method": "POST",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "description": "Unique identifier for the agent"
+          },
+          "process_id": {
+            "type": "string",
+            "description": "Process identifier"
+          },
+          "blueprint_id": {
+            "type": "string",
+            "description": "Blueprint/template identifier"
+          },
+          "timestamp_last_touched": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last modification timestamp"
+          },
+          "to": {
+            "type": "string",
+            "description": "Recipient email address"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Email subject"
+          },
+          "body": {
+            "type": "string",
+            "description": "Email body content"
+          },
+          "html": {
+            "type": "boolean",
+            "description": "Whether body is HTML format"
+          }
+        },
+        "required": ["agent_id", "process_id", "blueprint_id", "timestamp_last_touched", "to", "subject", "body"]
+      }
+    },
+    {
+      "name": "slack_message",
+      "description": "Send message to Slack channel",
+      "endpoint": "/actions/slack_message/execute",
+      "method": "POST",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "description": "Unique identifier for the agent"
+          },
+          "process_id": {
+            "type": "string",
+            "description": "Process identifier"
+          },
+          "blueprint_id": {
+            "type": "string",
+            "description": "Blueprint/template identifier"
+          },
+          "timestamp_last_touched": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last modification timestamp"
+          },
+          "channel": {
+            "type": "string",
+            "description": "Slack channel ID or name"
+          },
+          "message": {
+            "type": "string",
+            "description": "Message content"
+          }
+        },
+        "required": ["agent_id", "process_id", "blueprint_id", "timestamp_last_touched", "channel", "message"]
+      }
+    },
+    {
+      "name": "http_request",
+      "description": "Make HTTP request to external API",
+      "endpoint": "/actions/http_request/execute",
+      "method": "POST",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "description": "Unique identifier for the agent"
+          },
+          "process_id": {
+            "type": "string",
+            "description": "Process identifier"
+          },
+          "blueprint_id": {
+            "type": "string",
+            "description": "Blueprint/template identifier"
+          },
+          "timestamp_last_touched": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last modification timestamp"
+          },
+          "url": {
+            "type": "string",
+            "description": "Target URL"
+          },
+          "method": {
+            "type": "string",
+            "description": "HTTP method",
+            "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          },
+          "headers": {
+            "type": "object",
+            "description": "Request headers"
+          },
+          "body": {
+            "type": "object",
+            "description": "Request body"
+          }
+        },
+        "required": ["agent_id", "process_id", "blueprint_id", "timestamp_last_touched", "url", "method"]
+      }
+    }
+  ]
+}
