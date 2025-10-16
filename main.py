@@ -65,6 +65,10 @@ async def root_get():
         "version": "1.0.0",
         "status": "online",
         "mcp_enabled": True,
+        "transports": {
+            "http": "POST / (JSON-RPC 2.0)",
+            "sse": "GET /sse (Server-Sent Events for Claude Desktop)"
+        },
         "endpoints": {
             "health": "/health",
             "status": "/status",
@@ -73,6 +77,8 @@ async def root_get():
             "register": "/register (POST)",
             "mcp_tools": "/mcp/tools",
             "mcp_invoke": "/mcp/invoke (POST)",
+            "mcp_sse": "/sse (GET)",
+            "mcp_message": "/message (POST)",
             "discovery": "/.well-known/ai-plugin.json",
             "docs": "/docs"
         }
@@ -298,6 +304,22 @@ async def oauth_protected_resource():
         "bearer_methods_supported": [],
         "resource_documentation": f"{base_url}/docs"
     })
+
+
+@app.get("/sse")
+async def sse_endpoint(request: Request):
+    """SSE endpoint for Claude Desktop MCP connection"""
+    from mcp_sse import create_sse_response
+    logger.info("[MCP SSE] SSE connection initiated")
+    return create_sse_response(request)
+
+
+@app.post("/message")
+async def sse_message_endpoint(request: Request):
+    """Message endpoint for SSE transport (Claude Desktop sends JSON-RPC here)"""
+    from mcp_sse import handle_sse_message
+    response = await handle_sse_message(request)
+    return JSONResponse(content=response)
 
 
 if __name__ == "__main__":
