@@ -264,6 +264,29 @@ async def invoke_tool(request: InvokeRequest):
         )
 
 
+@app.get("/.well-known/ai-plugin.json")
+async def plugin_manifest():
+    """
+    ChatGPT MCP discovery endpoint
+    Returns plugin manifest for ChatGPT connector compatibility
+    """
+    return JSONResponse({
+        "schema_version": "v1",
+        "name_for_human": "Composio Agent Gateway",
+        "name_for_model": "composio_agent",
+        "description_for_human": "Unified MCP server for Composio, Render, and Firebase tools.",
+        "description_for_model": "Provides read/write operations through the MCP protocol. Tools include firebase_write, render_get_logs, and more.",
+        "auth": {"type": "none"},
+        "api": {
+            "type": "openapi",
+            "url": "https://composio-imo-creator-url.onrender.com/openapi.json"
+        },
+        "logo_url": "https://composio-imo-creator-url.onrender.com/logo.png",
+        "contact_email": "support@yourdomain.com",
+        "legal_info_url": "https://yourdomain.com/legal"
+    })
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler"""
