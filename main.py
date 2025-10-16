@@ -9,7 +9,9 @@ from datetime import datetime
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.openapi.utils import get_openapi
 
 # Configure logging
 logging.basicConfig(
@@ -34,6 +36,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Add HTTPS redirect middleware
+app.add_middleware(HTTPSRedirectMiddleware)
 
 # Add CORS middleware
 app.add_middleware(
@@ -187,6 +192,19 @@ async def plugin_manifest():
         "contact_email": "support@composio.dev",
         "legal_info_url": "https://composio.dev/legal"
     })
+
+
+@app.get("/.well-known/openapi.json")
+async def well_known_openapi():
+    """Well-known OpenAPI endpoint for MCP discovery"""
+    return JSONResponse(
+        get_openapi(
+            title="Composio Agent Gateway",
+            version="1.0.0",
+            description="MCP server for Composio, Render, and Firebase tools",
+            routes=app.routes
+        )
+    )
 
 
 if __name__ == "__main__":
