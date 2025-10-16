@@ -57,7 +57,15 @@ class ComposioClient:
                 response.raise_for_status()
                 data = response.json()
 
+                logger.info(f"[Composio] Raw API response keys: {list(data.keys())}")
+                logger.info(f"[Composio] Response sample: {str(data)[:500]}")
+
                 tools = data.get("data", [])
+                if not tools and "items" in data:
+                    tools = data.get("items", [])
+                if not tools and isinstance(data, list):
+                    tools = data
+
                 logger.info(f"[Composio] Fetched {len(tools)} tools")
 
                 return tools
